@@ -1,23 +1,12 @@
-import { IsBoolean, IsEnum, IsNumber, IsPositive } from 'class-validator';
-import { OrderStatus, OrderStatusList } from '../enum/order.enum';
-import { Optional } from '@nestjs/common';
+import { ArrayMinSize, IsArray, ValidateNested } from 'class-validator';
+
+import { OrderItemDto } from './order-item.dto';
+import { Type } from 'class-transformer';
 
 export class CreateOrderDto {
-  @IsNumber()
-  @IsPositive()
-  totalAmount: number;
-
-  @IsNumber()
-  @IsPositive()
-  totalItems: number;
-
-  @IsEnum(OrderStatusList, {
-    message: `Possible status value ${OrderStatusList}`,
-  })
-  @Optional()
-  status: OrderStatus = OrderStatus.PENDING;
-
-  @IsBoolean()
-  @Optional()
-  paid: boolean = false;
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => OrderItemDto)
+  items: OrderItemDto[];
 }
