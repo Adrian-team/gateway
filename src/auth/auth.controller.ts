@@ -1,25 +1,46 @@
-import { Controller, Inject, Post, Query } from '@nestjs/common';
+import { Body, Controller, Inject, Post, UseGuards } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
-import { catchError, firstValueFrom } from 'rxjs';
-import { PaginationDto } from 'src/common';
+import { firstValueFrom } from 'rxjs';
 import { NATS_SERVICE } from 'src/config';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
+
+import { LoginUserDto } from './dto/login-user.dto';
+import { RegisterUserDto } from './dto/register-user';
+import { AuthGuard } from '../guards/auth.guard';
+import { User } from './decorators/user.decorator';
 
 @Controller('auth')
 export class AuthController {
   constructor(@Inject(NATS_SERVICE) private readonly authClient: ClientProxy) {}
 
   @Post('register')
-  registerUser(@Query() paginationDto: PaginationDto) {
-    return this.authClient.send('auth.register.user', { ...paginationDto });
+  async registerUser(@Body() registerUserDto: RegisterUserDto) {
+    try {
+      const user = await firstValueFrom(
+        this.authClient.send('auth.register.user', { ...registerUserDto }),
+      );
+      return user;
+    } catch (error) {
+      throw new RpcException(error);
+    }
   }
   @Post('login')
-  loginUser(@Query() paginationDto: PaginationDto) {
-    return this.authClient.send('auth.login.user', { ...paginationDto });
+  async loginUser(@Body() loginUserDto: LoginUserDto) {
+    try {
+      const user = await firstValueFrom(
+        this.authClient.send('auth.login.user', { ...loginUserDto }),
+      );
+      return user;
+    } catch (error) {
+      throw new RpcException(error);
+    }
   }
+  @UseGuards(AuthGuard)
   @Post('verify')
-  verifyToken(@Query() paginationDto: PaginationDto) {
-    return this.authClient.send('auth.verify.user', { ...paginationDto });
+  async verifyToken(@User() user: any) {
+    try {
+      return user;
+    } catch (error) {
+      throw new RpcException(error);
+    }
   }
 }
